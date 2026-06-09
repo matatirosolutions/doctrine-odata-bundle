@@ -1,0 +1,21 @@
+# Dependencies
+/vendor/
+
+# Composer lock file — not committed in libraries/bundles
+composer.lock
+
+# PHPUnit
+/.phpunit.cache/
+.phpunit.result.cache
+/phpunit.integration.xml
+
+# IDE
+/.idea/
+/.vscode/
+*.iml
+
+# Claude
+/.claude/
+
+# macOS
+.DS_Store
