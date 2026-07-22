@@ -87,14 +87,57 @@ readonly class ContainerService
         string   $content,
         string   $contentType,
     ): void {
+        $resolvedKey = $keyValue->quoted
+            ? $this->resolveNumericKey($entitySet, $keyValue->value)
+            : $keyValue;
+
         $this->odataConnection()->getClient()->patchBinary(
             $entitySet,
-            $keyValue,
+            $resolvedKey,
             $field,
             $content,
             $contentType,
             $this->uploadTimeout(strlen($content)),
         );
+    }
+
+    /**
+     * Resolves the numeric FileMaker record ID for a record identified by its
+     * string primary key (UUID).
+     *
+     * FileMaker's OData PATCH for container fields only accepts the internal
+     * numeric key (e.g. EntitySet(26)), not the UUID-style application key.
+     * This method issues one extra GET to discover that numeric key from the
+     * @id annotation in the entity response.
+     *
+     * @throws ODataDriverException if the entity cannot be found or the @id
+     *         annotation does not contain a recognisable numeric key.
+     */
+    private function resolveNumericKey(string $entitySet, string $pkValue): KeyValue
+    {
+        $client   = $this->odataConnection()->getClient();
+        $metadata = $client->fetchMetadata();
+        $pkField  = $metadata['entities'][$entitySet]['pk']
+            ?? throw new ODataDriverException("No metadata found for entity set \"$entitySet\".");
+
+        $data = $client->get($entitySet, '?$filter=' . $pkField . ' eq \'' . $pkValue . '\'');
+        $atId = $data['value'][0]['@id'] ?? null;
+
+        if ($atId === null) {
+            throw new ODataDriverException(
+                "Could not resolve numeric OData key for $entitySet with $pkField = '$pkValue'."
+            );
+        }
+
+        preg_match('/' . preg_quote($entitySet, '/') . '\((\d+)\)/', $atId, $m);
+
+        if (!isset($m[1])) {
+            throw new ODataDriverException(
+                "Unexpected @id format for $entitySet: \"$atId\"."
+            );
+        }
+
+        return new KeyValue($m[1], quoted: false);
     }
 
     /**
