@@ -93,7 +93,21 @@ readonly class ContainerService
             $field,
             $content,
             $contentType,
+            $this->uploadTimeout(strlen($content)),
         );
+    }
+
+    /**
+     * Calculates a generous timeout for binary uploads based on content size.
+     *
+     * Assumes a minimum effective throughput of ~33 KB/s (30 seconds per MB),
+     * with a 60-second floor to allow for server-side processing time.
+     *
+     * Examples: 1 MB → 60 s, 9 MB → 270 s, 50 MB → 1 500 s.
+     */
+    private function uploadTimeout(int $bytes): int
+    {
+        return max(60, (int) ceil($bytes / (1024 * 1024)) * 30);
     }
 
     /**

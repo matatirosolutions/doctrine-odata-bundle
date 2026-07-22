@@ -105,7 +105,7 @@ PROP;
             $rhs        = $this->setterRhs($edmType, $nullable);
 
             if (in_array($edmType, ['Edm.Binary', 'Edm.Stream'], true)) {
-                $properties .= "\n\n    /** Container field — value in OData responses is a URL; use ContainerService to download/upload. */";
+                $properties .= "\n\n    /** Container field — OData responses does not map this field; use Matatirosoln\DoctrineOdataBundle\Service\ContainerService to download/upload. */";
             }
 
             $properties .= <<<PROP
