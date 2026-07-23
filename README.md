@@ -12,7 +12,7 @@ Integrates the OData DBAL driver into a Symfony application with automatic metad
 |---|---|
 | PHP | 8.4+ |
 | Symfony | 7.x or 8.x |
-| `matatirosoln/doctrine-odata-driver` | ^0.0.1 |
+| `matatirosoln/doctrine-odata-driver` | ^0.1.0 |
 | `doctrine/doctrine-bundle` | ^2.12 |
 
 ---
@@ -197,6 +197,17 @@ class DocumentController extends AbstractController
     }
 }
 ```
+
+#### Primary key requirement
+
+Container field uploads use the OData key-path URL form (`PATCH /EntitySet('key')/Field`), which requires the entity set to have a properly defined primary key.
+
+FileMaker OData identifies a field as the primary key if it satisfies **both** of the following conditions:
+
+- The field does not allow empty values
+- The field requires a unique value (uniqueness validation is enabled)
+
+If no field meets these criteria, FileMaker falls back to the internal `ROWID` system field (equivalent to `Get(RecordID)`). The `ROWID` is a numeric record ID that changes if a record is deleted and recreated, and is not accessible as a regular application field. A table that relies on `ROWID` as its OData primary key will not work correctly with container uploads — or with any single-entity OData operation — and should be given an explicit primary key field with the correct field options set in FileMaker.
 
 ### ValueListService
 
