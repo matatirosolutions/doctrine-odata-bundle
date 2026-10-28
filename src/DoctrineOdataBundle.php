@@ -21,6 +21,18 @@ use function Symfony\Component\DependencyInjection\Loader\Configurator\service;
 class DoctrineOdataBundle extends AbstractBundle
 {
     /**
+     * Priority of the metadata cache middleware among Doctrine's `doctrine.middleware` services.
+     *
+     * Doctrine applies higher priorities first, so each later middleware wraps the previous
+     * one. ODataMetadataCacheMiddleware only acts on a bare ODataDriver, so it has to run
+     * before everything else; DoctrineBundle's own middlewares (idle connection, debug,
+     * logging) use priority 10 and would otherwise wrap the driver first, silently turning
+     * the cache into a no-op. Keep this above 10, and give any middleware of your own that
+     * wraps the driver a lower priority than this.
+     */
+    public const int METADATA_CACHE_MIDDLEWARE_PRIORITY = 100;
+
+    /**
      * Defines the bundle's configuration tree.
      *
      * Minimal config (uses defaults — cache.app, 1 hour TTL):
@@ -81,7 +93,7 @@ class DoctrineOdataBundle extends AbstractBundle
                 service('matatirosoln.odata.psr16_cache'),
                 $ttl,
             ])
-            ->tag('doctrine.middleware');
+            ->tag('doctrine.middleware', ['priority' => self::METADATA_CACHE_MIDDLEWARE_PRIORITY]);
 
         // FileMaker-specific services — autowireable by type.
         $services

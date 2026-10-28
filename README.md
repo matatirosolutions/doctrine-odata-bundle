@@ -82,6 +82,22 @@ The OData `$metadata` endpoint describes the schema of the database and is requi
 
 The middleware is a no-op for any non-OData DBAL connection, so it is safe to use in applications with multiple connections.
 
+The middleware can only attach the cache to a bare `ODataDriver`, so it must be the first middleware Doctrine applies. The bundle registers it with a `doctrine.middleware` priority of `100` (Doctrine applies higher priorities first, and its own idle-connection, debug and logging middlewares use `10`). If you add a middleware of your own, give it a priority below `100`.
+
+> **Versions before 0.1.2** registered the middleware without a priority, so it ran *after* the idle-connection middleware (always present) and the debug/logging middlewares (present in debug), found a wrapped driver, and silently did nothing: `$metadata` was never cached and was downloaded by every PHP process. If you are on an earlier version, upgrade, or work around it in your application by re-registering the middleware with a higher priority:
+>
+> ```yaml
+> # config/services.yaml
+> Matatirosoln\DoctrineOdataBundle\Middleware\ODataMetadataCacheMiddleware:
+>     autowire: false
+>     autoconfigure: false
+>     arguments: ['@matatirosoln.odata.psr16_cache', 3600]
+>     tags:
+>         - { name: doctrine.middleware, priority: 100 }
+> ```
+>
+> You can check whether the cache is attached by asking for the connection's driver chain; `ODataMetadataCacheDriver` must appear directly around `ODataDriver`.
+
 ---
 
 ## Services
